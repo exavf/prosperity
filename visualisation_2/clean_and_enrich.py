@@ -176,16 +176,37 @@ def pair_trades_to_book(prices: pd.DataFrame, trades: pd.DataFrame) -> pd.DataFr
         if t.empty or p.empty:
             continue
 
-        t = t.sort_values("timestamp")
-        p = p.sort_values("timestamp")
+        t = t.sort_values("timestamp").copy()
+        p = p.sort_values("timestamp").copy()
+
+        book_cols = [
+            "timestamp",
+            "bid_price_1", "bid_volume_1",
+            "bid_price_2", "bid_volume_2",
+            "bid_price_3", "bid_volume_3",
+            "ask_price_1", "ask_volume_1",
+            "ask_price_2", "ask_volume_2",
+            "ask_price_3", "ask_volume_3",
+            "mid_price_clean",
+            "spread",
+            "mid_diff_vs_raw",
+            "bid_depth_3",
+            "ask_depth_3",
+            "imbalance_l1",
+            "microprice",
+        ]
+        book_cols = [col for col in book_cols if col in p.columns]
+        p_small = p[book_cols].copy()
 
         paired = pd.merge_asof(
             t,
-            p,
+            p_small,
             on="timestamp",
             direction="backward",
-            suffixes=("_trade", "_book"),
         )
+
+        paired["day"] = day
+        paired["symbol"] = symbol
 
         paired["trade_vs_mid"] = paired["price"] - paired["mid_price_clean"]
         paired["trade_vs_bid"] = paired["price"] - paired["bid_price_1"]
